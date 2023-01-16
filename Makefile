@@ -412,7 +412,7 @@ else ifneq (,$(findstring ios,$(platform)))
    DEFINES += -DIOS
    GLES = 1
 	ifeq ($(platform),ios-arm64)
-		WITH_DYNAREC = aarch64
+		# WITH_DYNAREC = aarch64
 		GLES = 1
 		GLES3 = 1
 		FORCE_GLES3 = 1

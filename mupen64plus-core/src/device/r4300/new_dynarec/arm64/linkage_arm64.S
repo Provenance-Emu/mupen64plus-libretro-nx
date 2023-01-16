@@ -266,7 +266,7 @@ GLOBAL_FUNCTION(dyna_linker_ds):
 
 GLOBAL_FUNCTION(new_dyna_start):
 #if defined(__APPLE__)
-    adrp   x16, __g_dev@GOTPAGE
+    adrp   x16, g_dev@GOTPAGE
     ldr    x16, [x16, #g_dev@GOTPAGEOFF]
 #else
     adrp   x16, g_dev
@@ -277,8 +277,8 @@ GLOBAL_FUNCTION(new_dyna_start):
     add    x16, x16, x1
 
 #if defined(__APPLE__)
-    adrp   x1, _base_addr_rx@GOTPAGE
-    ldr    x1, [x1, _base_addr_rx@GOTPAGEOFF]
+    adrp   x1, base_addr_rx@GOTPAGE
+    ldr    x1, [x1, #base_addr_rx@GOTPAGEOFF]
 #else
     adrp   x1, base_addr_rx
     add    x1, x1, :lo12:base_addr_rx
