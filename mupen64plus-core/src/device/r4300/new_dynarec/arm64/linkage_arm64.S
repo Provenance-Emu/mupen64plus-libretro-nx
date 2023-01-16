@@ -25,8 +25,9 @@
     name
 
 #define LOCAL_FUNCTION(name)  \
-    .hidden name;             \
+#ifndef __MACH__ \
     .type name, %function;    \
+#endif \
     name
 
 #define GLOBAL_VARIABLE(name, size_) \
@@ -38,6 +39,26 @@
 .macro movl Wn, imm
     movz    \Wn, (\imm >> 16) & 0xFFFF, lsl 16
     movk    \Wn,  \imm & 0xFFFF
+.endm
+
+.macro PREPARE_EXTERNAL_VAR Name, HelperReg
+#if defined(__APPLE__)
+    adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
+    ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+#else
+    adrp \HelperReg, C_FUNC(\Name)
+    add  \HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+#endif
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+#if defined(__APPLE__)
+adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
+ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+#else
+adrp \HelperReg, C_FUNC(\Name)
+ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
+#endif
 .endm
 
 #define TEXT_SECTION .text
@@ -197,7 +218,8 @@ GLOBAL_FUNCTION(cc_interrupt):
     bl     get_addr_ht
     br     x0
 
-LOCAL_FUNCTION(new_dyna_stop):
+new_dyna_stop:
+_new_dyna_stop:
     add    x16, x29, #saved_context
     ldp    x19,x20,[x16,#0]
     ldp    x21,x22,[x16,#16]
@@ -243,12 +265,25 @@ GLOBAL_FUNCTION(dyna_linker_ds):
     br     x0
 
 GLOBAL_FUNCTION(new_dyna_start):
+#if defined(__APPLE__)
+    adrp   x16, __g_dev@GOTPAGE
+    ldr    x16, [x16, #g_dev@GOTPAGEOFF]
+#else
     adrp   x16, g_dev
     add    x16, x16, :lo12:g_dev
+#endif
+
     movl   x1, (device_r4300_new_dynarec_hot_state_dynarec_local + saved_context)
     add    x16, x16, x1
+
+#if defined(__APPLE__)
+    adrp   x1, _base_addr_rx@GOTPAGE
+    ldr    x1, [x1, _base_addr_rx@GOTPAGEOFF]
+#else
     adrp   x1, base_addr_rx
     add    x1, x1, :lo12:base_addr_rx
+#endif
+
     mov    w0, #0xa4000000
     stp    x19,x20,[x16,#0]
     stp    x21,x22,[x16,#16]

@@ -3505,6 +3505,8 @@ _patch_register(jit_state_t *_jit, jit_node_t *node, jit_node_t *link,
 #  include "jit_x86.c"
 #elif defined(__mips__)
 #  include "jit_mips.c"
+#elif defined(__aarch64__)
+#  include "jit_aarch64.c"
 #elif defined(__arm__)
 #  include "jit_arm.c"
 #elif defined(__powerpc__)
@@ -3515,8 +3517,6 @@ _patch_register(jit_state_t *_jit, jit_node_t *node, jit_node_t *link,
 #  include "jit_ia64.c"
 #elif defined(__hppa__)
 #  include "jit_hppa.c"
-#elif defined(__aarch64__)
-#  include "jit_aarch64.c"
 #elif defined(__s390__) || defined(__s390x__)
 #  include "jit_s390.c"
 #elif defined(__alpha__)

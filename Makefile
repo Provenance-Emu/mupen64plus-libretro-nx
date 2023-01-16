@@ -1,6 +1,6 @@
 DEBUG = 0
 FORCE_GLES ?= 0
-FORCE_GLES3 ?= 0
+FORCE_GLES3 ?= 1
 LLE ?= 0
 HAVE_PARALLEL_RSP ?= 0
 HAVE_PARALLEL_RDP ?= 0
@@ -43,19 +43,20 @@ else ifneq (,$(findstring armv,$(platform)))
 endif
 
 # system platform
-system_platform = unix
-ifeq ($(shell uname -a),)
-   EXE_EXT = .exe
-   system_platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   system_platform = osx
-   arch = intel
-ifeq ($(shell uname -p),powerpc)
-   arch = ppc
-endif
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   system_platform = win
-endif
+system_platform = ios-arm64
+arch = arm64
+# ifeq ($(shell uname -a),)
+#    EXE_EXT = .exe
+#    system_platform = win
+# else ifneq ($(findstring Darwin,$(shell uname -a)),)
+#    system_platform = osx
+#    arch = intel
+# ifeq ($(shell uname -p),powerpc)
+#    arch = ppc
+# endif
+# else ifneq ($(findstring MINGW,$(shell uname -a)),)
+#    system_platform = win
+# endif
 
 # Cross compile ?
 
@@ -411,19 +412,44 @@ else ifneq (,$(findstring ios,$(platform)))
    DEFINES += -DIOS
    GLES = 1
 	ifeq ($(platform),ios-arm64)
-		WITH_DYNAREC=
-		GLES=1
-		GLES3=1
-		FORCE_GLES3=1
+		WITH_DYNAREC = aarch64
+		GLES = 1
+		GLES3 = 1
+		FORCE_GLES3 = 1
 		EGL := 0
-		PLATCFLAGS += -DHAVE_POSIX_MEMALIGN -DNO_ASM
-		PLATCFLAGS += -DIOS -marm -DOS_IOS -DDONT_WANT_ARM_OPTIMIZATIONS
-		CPUFLAGS += -marm -mfpu=neon -mfloat-abi=softfp
-		HAVE_NEON=0
-		CC         += -miphoneos-version-min=8.0
+		HAVE_NEON=1
+		HAVE_PARALLEL_RDP = 1
+#		HAVE_PARALLEL_RSP = 1
+		HAVE_THR_AL = 1
+		LLE = 1
+		NO_ASM = 1
+
+		#__aarch64__
+
+		PLATCFLAGS += -Ofast
+		PLATCFLAGS += -ffast-math -funsafe-math-optimizations
+		PLATCFLAGS += -DHAVE_POSIX_MEMALIGN
+		PLATCFLAGS += -DNO_ASM
+		PLATCFLAGS += -DIOS -DOS_IOS
+#		PLATCFLAGS += -mfloat-abi=softfp -marm -mfpu=neon
+
+		COREFLAGS += -Ofast
+		COREFLAGS += -ffast-math -funsafe-math-optimizations
+		COREFLAGS += -DNO_ASM
+#		COREFLAGS += -mfloat-abi=softfp -marm -mfpu=neon
+
+		CPUFLAGS += -Ofast
+		CPUFLAGS += -ffast-math -funsafe-math-optimizations
+		CPUFLAGS += -DNO_ASM
+#		CPUFLAGS += -DARM_ASM -DARM
+#		CPUFLAGS += -mfloat-abi=softfp -marm -mfpu=neon
+
+		CC_AS = perl ./custom/tools/gas-preprocessor.pl $(CC)
 		CC_AS      += -miphoneos-version-min=8.0
+		CC         += -miphoneos-version-min=8.0
 		CXX        += -miphoneos-version-min=8.0
 		PLATCFLAGS += -miphoneos-version-min=8.0 -Wno-error=implicit-function-declaration
+
 		CC = clang -arch arm64 -isysroot $(IOSSDK)
 		CXX = clang++ -arch arm64 -isysroot $(IOSSDK)
 	else
@@ -552,7 +578,10 @@ endif
 include Makefile.common
 
 ifeq ($(HAVE_NEON), 1)
-   COREFLAGS += -DHAVE_NEON -D__ARM_NEON__ -D__NEON_OPT -ftree-vectorize -mvectorize-with-neon-quad -ftree-vectorizer-verbose=2 -funsafe-math-optimizations -fno-finite-math-only
+   COREFLAGS += -DHAVE_NEON -D__ARM_NEON__ -D__NEON_OPT -ftree-vectorize -funsafe-math-optimizations -fno-finite-math-only
+   ifneq ($(platform), ios-arm64)
+   COREFLAGS += -mvectorize-with-neon-quad -ftree-vectorizer-verbose=2
+   endif
 endif
 
 ifeq ($(LLE), 1)
