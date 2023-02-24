@@ -97,7 +97,6 @@ int TxHiResCache::_getConfig() const
 {
 	return getOptions() &
 		(HIRESTEXTURES_MASK |
-		TILE_HIRESTEX |
 		FORCE16BPP_HIRESTEX |
 		GZ_HIRESTEXCACHE |
 		FILE_HIRESTEXCACHE |
@@ -167,18 +166,6 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 
 	LoadResult result = resOk;
 
-#ifdef OS_WINDOWS
-	wchar_t curpath[MAX_PATH];
-	GETCWD(MAX_PATH, curpath);
-	CHDIR(dir_path);
-#else
-	char curpath[MAX_PATH];
-	char cbuf[MAX_PATH];
-	wcstombs(cbuf, dir_path, MAX_PATH);
-	GETCWD(MAX_PATH, curpath);
-	CHDIR(cbuf);
-#endif
-
 	void *dir = osal_search_dir_open(dir_path);
 	const wchar_t *foundfilename;
 	// the path of the texture
@@ -198,9 +185,8 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 		// The array is empty,  break the current operation
 		if (foundfilename == nullptr)
 			break;
-		// The current file is a hidden one
-		if (wccmp(foundfilename, wst(".")))
-			// These files we don't need
+
+		if (!checkFolderName(foundfilename))
 			continue;
 
 		texturefilename.assign(dir_path);
@@ -226,10 +212,16 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 		/* Rice hi-res textures: begin
 		 */
 		uint32 chksum = 0, fmt = 0, siz = 0, palchksum = 0, length = 0;
+		FULLFNAME_CHARTYPE fullfname[MAX_PATH];
 		char fname[MAX_PATH];
 		char ident[MAX_PATH];
 		FILE *fp = nullptr;
 
+#ifdef _WIN32
+		wcscpy(fullfname, texturefilename.c_str());
+#else
+		wcstombs(fullfname, texturefilename.c_str(), MAX_PATH);
+#endif
 		wcstombs(ident, _ident.c_str(), MAX_PATH);
 		wcstombs(fname, foundfilename, MAX_PATH);
 
@@ -251,7 +243,7 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 				chksum64 <<= 32;
 				chksum64 |= (uint64)chksum;
 			}
-			if (isCached(chksum64)) {
+			if (isCached(chksum64, N64FormatSize(fmt, siz))) {
 #if !DEBUG
 				INFO(80, wst("-----\n"));
 				INFO(80, wst("file: %s\n"), fname);
@@ -261,7 +253,7 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 			}
 		}
 
-		tex = loadFileInfoTex(fname, siz, &width, &height, fmt, &format);
+		tex = loadFileInfoTex(fullfname, fname, siz, &width, &height, fmt, &format);
 		if (tex == nullptr) {
 			/* failed to load file into tex data, skip it */
 			continue;
@@ -281,6 +273,7 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 		tmpInfo.width = width;
 		tmpInfo.height = height;
 		tmpInfo.is_hires_tex = 1;
+		tmpInfo.n64_format_size = N64FormatSize(fmt, siz);
 		setTextureFormat(format, &tmpInfo);
 
 		/* remove redundant in cache */
@@ -310,8 +303,6 @@ TxHiResCache::LoadResult TxHiResCache::_loadHiResTextures(const wchar_t * dir_pa
 
 	osal_search_dir_close(dir);
 
-	CHDIR(curpath);
-
 	return result;
 }
 
@@ -325,7 +316,7 @@ bool TxHiResCache::add(Checksum checksum, GHQTexInfo *info, int dataSize)
 	return TxCache::add(checksum, info, dataSize);
 }
 
-bool TxHiResCache::get(Checksum checksum, GHQTexInfo *info)
+bool TxHiResCache::get(Checksum checksum, N64FormatSize n64FmtSz, GHQTexInfo *info)
 {
-	return TxCache::get(checksum, info);
+	return TxCache::get(checksum, n64FmtSz, info);
 }

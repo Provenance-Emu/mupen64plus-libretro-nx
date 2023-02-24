@@ -5,7 +5,7 @@
 
 #include "GLFunctions.h"
 
-#define ASSIGN_PROC_ADR(proc_type, proc_name) ptr##proc_name = rgl##proc_name
+#define ASSIGN_PROC_ADR(proc_type, proc_name) ptr##proc_name = (proc_type) rgl##proc_name
 #define ASSIGN_GL_PROC_ADR(proc_type, proc_name) ptr##proc_name = gl##proc_name
 
 #if defined(GL_USE_DLSYM)
@@ -111,6 +111,7 @@ PFNGLACTIVETEXTUREPROC ptrActiveTexture;
 PFNGLBLENDCOLORPROC ptrBlendColor;
 PFNGLREADBUFFERPROC ptrReadBuffer;
 PFNGLFINISHPROC ptrFinish;
+PFNGLFLUSHPROC ptrFlush;
 #if defined(OS_ANDROID)
 PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC ptrGetNativeClientBufferANDROID;
 #endif
@@ -265,6 +266,7 @@ extern "C" void initGLFunctions()
 	ASSIGN_PROC_ADR(PFNGLBLENDCOLORPROC, BlendColor);
 	ASSIGN_PROC_ADR(PFNGLREADBUFFERPROC, ReadBuffer);
 	GL_GET_PROC_ADR(PFNGLFINISHPROC, Finish);
+	GL_GET_PROC_ADR(PFNGLFLUSHPROC, Flush);
 #if defined(OS_ANDROID)
 	GL_GET_PROC_ADR_EGL(PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC, GetNativeClientBufferANDROID);
 #endif

@@ -143,7 +143,7 @@ void FrameBuffer::_setAndAttachTexture(ObjectHandle _fbo, CachedTexture *_pTextu
 
 bool FrameBuffer::isAuxiliary() const
 {
-	return m_width != VI.width;
+	return m_width != VI.width || m_size < G_IM_SIZ_16b;
 }
 
 void FrameBuffer::init(u32 _address, u16 _format, u16 _size, u16 _width, bool _cfb)
@@ -1006,7 +1006,7 @@ void FrameBufferList::attachDepthBuffer()
 	if (pCurrent == nullptr)
 		return;
 
-	DepthBuffer * pDepthBuffer = depthBufferList().getCurrent();
+	DepthBuffer * pDepthBuffer = pCurrent->m_isDepthBuffer ? depthBufferList().findBuffer(pCurrent->m_startAddress) : depthBufferList().getCurrent();
 
 	if (pCurrent->m_FBO.isNotNull() && pDepthBuffer != nullptr) {
 		pDepthBuffer->initDepthImageTexture(pCurrent);
@@ -1150,7 +1150,9 @@ bool FrameBufferList::RdpUpdate::update(RdpUpdateResult & _result)
 	const s32 x1 = _SHIFTR( *REG.VI_H_START, 16, 10 );
 	const s32 y1 = _SHIFTR( *REG.VI_V_START, 16, 10 );
 	const s32 x2 = _SHIFTR( *REG.VI_H_START, 0, 10 );
-	const s32 y2 = _SHIFTR( *REG.VI_V_START, 0, 10 );
+	s32 y2 = _SHIFTR( *REG.VI_V_START, 0, 10 );
+	if (y2 < y1)
+		y2 = ispal ? 44 + 576 : 34 + 480;
 
 	const s32 delta_x = x2 - x1;
 	const s32 delta_y = y2 - y1;

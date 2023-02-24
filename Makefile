@@ -112,6 +112,8 @@ ifneq (,$(findstring unix,$(platform)))
    endif
 
    ifneq (,$(findstring armv,$(platform)))
+      ARCH = arm
+      WITH_DYNAREC = arm
       CPUFLAGS += -DARM -marm
       ifneq (,$(findstring cortexa8,$(platform)))
          CPUFLAGS += -mcpu=cortex-a8
@@ -144,6 +146,7 @@ else ifneq (,$(findstring rpi,$(platform)))
       MESA = 1
    endif
    ifneq (,$(findstring rpi4,$(platform)))
+      GLES3 = 1
       MESA = 1
    endif
    ifeq ($(MESA), 1)
@@ -392,7 +395,7 @@ else ifneq (,$(findstring osx,$(platform)))
         LDFLAGS += -mmacosx-version-min=10.7
    LDFLAGS += -stdlib=libc++
 
-   PLATCFLAGS += -D__MACOSX__ -DOSX -DOS_MAC_OS_X
+   PLATCFLAGS += -D__MACOSX__ -DOSX -DOS_MAC_OS_X -DHAVE_UNISTD_H=1 -DHAVE_POSIX_MEMALIGN -DNO_ASM -DGL_SILENCE_DEPRECATION=1
    GL_LIB := -framework OpenGL
 
    # Target Dynarec
@@ -400,8 +403,19 @@ else ifneq (,$(findstring osx,$(platform)))
       WITH_DYNAREC =
    endif
 
+   HAVE_PARALLEL_RSP = 1
+   HAVE_PARALLEL_RDP = 1
+
    COREFLAGS += -DOS_LINUX
    ASFLAGS = -f elf -d ELF_TYPE
+
+   ifeq ($(CROSS_COMPILE),1)
+      TARGET_RULE   = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+      CFLAGS   += $(TARGET_RULE)
+      CPPFLAGS += $(TARGET_RULE)
+      CXXFLAGS += $(TARGET_RULE)
+      LDFLAGS  += $(TARGET_RULE)
+   endif
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
    ifeq ($(IOSSDK),)
@@ -660,8 +674,8 @@ $(AWK_DEST_DIR)/asm_defines_nasm.h: $(ASM_DEFINES_OBJ)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	find -name "*.o" -type f -delete
-	find -name "*.d" -type f -delete
+	find $(ROOT_DIR) -name "*.o" -type f -delete
+	find $(ROOT_DIR) -name "*.d" -type f -delete
 	rm -f $(TARGET)
 
 .PHONY: clean
