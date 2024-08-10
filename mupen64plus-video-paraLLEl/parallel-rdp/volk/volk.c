@@ -57,6 +57,8 @@ VkResult volkInitialize(void)
 		module = dlopen("libvulkan.1.dylib", RTLD_NOW | RTLD_LOCAL);
 	if (!module)
 		module = dlopen("libMoltenVK.dylib", RTLD_NOW | RTLD_LOCAL);
+    if (!module)
+        module = dlopen("MoltenVK.framework/MoltenVK", RTLD_NOW | RTLD_LOCAL);
 	if (!module)
 		return VK_ERROR_INITIALIZATION_FAILED;
 
